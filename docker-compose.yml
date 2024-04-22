@@ -1,0 +1,62 @@
+version: '3.8'
+
+# Define network
+networks:
+  mynetwork:  # สร้างเครือข่ายชื่อ mynetwork
+    driver: bridge  # ใช้เป็น bridge network
+
+# PHP service
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile-php
+    volumes:
+      - ./php:/var/www/html
+    networks:
+      - mynetwork  # เชื่อมต่อกับเครือข่ายที่กำหนดในส่วน networks
+
+  # Nginx service
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile-nginx
+    ports:
+      - "8005:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d  # แชร์ไฟล์คอนฟิกของ Nginx
+      - ./php:/var/www/html  # แชร์โค้ด PHP ไปยัง Nginx
+    depends_on:
+      - php  # ระบุว่าต้องรอให้ PHP เริ่มต้นก่อนที่จะเริ่ม Nginx
+    networks:
+      - mynetwork
+
+  # phpMyAdmin service
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8181:80"  # กำหนดพอร์ตที่ใช้ในการเข้าถึง phpMyAdmin
+    environment:
+      PMA_HOST: db  # ชื่อโฮสต์ของ MySQL
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}  # รหัสผ่าน root ของ MySQL
+    networks:
+      - mynetwork
+
+  # MySQL service
+  db:
+    image: mariadb:11.3.2
+    restart: always  # รีสตาร์ทเซอร์วิสเมื่อมีปัญหา
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}  # ชื่อฐานข้อมูล MySQL
+      MYSQL_USER: ${DB_USERNAME}  # ชื่อผู้ใช้ MySQL
+      MYSQL_PASSWORD: ${DB_PASSWORD}  # รหัสผ่าน MySQL
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}  # รหัสผ่าน root ของ MySQL
+    volumes:
+      - db_data:/var/lib/mysql  # สร้าง volume เพื่อเก็บข้อมูลฐานข้อมูล MySQL
+    networks:
+      - mynetwork
+
+# Define volume
+volumes:
+  db_data:
+

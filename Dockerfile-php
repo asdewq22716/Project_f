@@ -1,0 +1,18 @@
+# Use the official PHP 7.4 image with Apache
+FROM php:7.4-apache
+
+# Install PHP extensions and other dependencies
+RUN apt-get update && apt-get install -y \
+    vim \
+    git \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install additional PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) gd mysqli pdo pdo_mysql
+
+# Set the working directory to /var/www/html
+WORKDIR /var/www/html
